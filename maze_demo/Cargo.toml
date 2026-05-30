@@ -1,0 +1,8 @@
+[package]
+name = "maze_demo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bitflags = "2.11.1"
+rand = "0.10.1"
