@@ -214,7 +214,55 @@ impl Maze {
         self.end = end_idx;
     }
 
-    fn generate_doors_and_keys() {}
+    fn find_path_to_exit(&self) -> Vec<usize> {
+        let mut visited = vec![false; self.width * self.height];
+        let mut path = Vec::<usize>::new();
+        self.dfs(self.start, self.end, &mut path, &mut visited);
+        path
+    }
+
+    fn dfs(&self, current: usize, end: usize, path: &mut Vec<usize>, visited: &mut [bool]) -> bool {
+        if current == end {
+            path.push(current);
+            return true;
+        }
+        visited[current] = true;
+        path.push(current);
+
+        let x = current % self.width;
+        let y = current / self.width;
+        let cell = self.grid[current];
+
+        if !cell.walls.contains(Walls::NORTH) && y > 0 {
+            let n = current - self.width;
+            if !visited[n] && self.dfs(n, end, path, visited) {
+                return true;
+            }
+        }
+
+        if !cell.walls.contains(Walls::SOUTH) && y < self.height - 1 {
+            let s = current + self.width;
+            if !visited[s] && self.dfs(s, end, path, visited) {
+                return true;
+            }
+        }
+
+        if !cell.walls.contains(Walls::EAST) && x < self.width - 1 {
+            let e = current + 1;
+            if !visited[e] && self.dfs(e, end, path, visited) {
+                return true;
+            }
+        }
+
+        if !cell.walls.contains(Walls::WEST) && x > 0 {
+            let w = current - 1;
+            if !visited[w] && self.dfs(w, end, path, visited) {
+                return true;
+            }
+        }
+        path.pop();
+        false
+    }
 
     fn print_maze(&self) {
         print!("+");
@@ -264,7 +312,8 @@ impl Maze {
 }
 
 fn main() {
-    let mut maze = Maze::new(10, 9);
+    let mut maze = Maze::new(10, 15);
     maze.generate_prim();
     maze.print_maze();
+    println!("{:?}", maze.find_path_to_exit());
 }
