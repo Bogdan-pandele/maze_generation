@@ -1,7 +1,7 @@
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 
 use bitflags::bitflags;
-use rand::{RngExt, rngs::ThreadRng};
+use rand::{RngExt, rngs::ThreadRng, seq::IndexedRandom};
 
 bitflags! {
     #[derive(Clone, Copy)]
@@ -15,10 +15,10 @@ bitflags! {
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 enum CellType {
-    DOOR,
-    KEY,
+    Door(u8),
+    Key(u8),
     #[default]
-    NORMAL,
+    Normal,
 }
 
 #[derive(Clone, Copy)]
@@ -81,6 +81,7 @@ impl Maze {
             self.connect_cell_to_neighbour(x, y, &visited, &mut frontier, &mut rng);
         }
         self.create_end_cell();
+        self.generate_doors_and_keys(&mut rng);
     }
 
     fn connect_cell_to_neighbour(
@@ -177,41 +178,40 @@ impl Maze {
         while let Some(current) = queue.pop_back() {
             end_idx = current;
 
-            let x = current % self.width;
-            let y = current / self.width;
-            let cell = self.grid[current];
-
-            if !cell.walls.contains(Walls::NORTH) && y > 0 {
-                let n_neighbour_idx = current - self.width;
-                if !visited[n_neighbour_idx] {
-                    visited[n_neighbour_idx] = true;
-                    queue.push_front(n_neighbour_idx);
-                }
-            }
-            if !cell.walls.contains(Walls::SOUTH) && y < self.height - 1 {
-                let s_neighbour_idx = current + self.width;
-                if !visited[s_neighbour_idx] {
-                    visited[s_neighbour_idx] = true;
-                    queue.push_front(s_neighbour_idx);
-                }
-            }
-            if !cell.walls.contains(Walls::WEST) && x > 0 {
-                let w_neighbour_idx = current - 1;
-                if !visited[w_neighbour_idx] {
-                    visited[w_neighbour_idx] = true;
-                    queue.push_front(w_neighbour_idx);
-                }
-            }
-            if !cell.walls.contains(Walls::EAST) && x < self.width - 1 {
-                let e_neighbour_idx = current + 1;
-                if !visited[e_neighbour_idx] {
-                    visited[e_neighbour_idx] = true;
-                    queue.push_front(e_neighbour_idx);
+            for neighbour in self.get_neighbours(current) {
+                if !visited[neighbour] {
+                    visited[neighbour] = true;
+                    queue.push_front(neighbour);
                 }
             }
         }
 
         self.end = end_idx;
+    }
+
+    fn get_neighbours(&self, current: usize) -> Vec<usize> {
+        let mut neighbours = Vec::new();
+        let x = current % self.width;
+        let y = current / self.width;
+        let cell = self.grid[current];
+
+        if !cell.walls.contains(Walls::NORTH) && y > 0 {
+            neighbours.push(current - self.width);
+        }
+
+        if !cell.walls.contains(Walls::SOUTH) && y < self.height - 1 {
+            neighbours.push(current + self.width);
+        }
+
+        if !cell.walls.contains(Walls::WEST) && x > 0 {
+            neighbours.push(current - 1);
+        }
+
+        if !cell.walls.contains(Walls::EAST) && x < self.width - 1 {
+            neighbours.push(current + 1);
+        }
+
+        neighbours
     }
 
     fn find_path_to_exit(&self) -> Vec<usize> {
@@ -229,39 +229,110 @@ impl Maze {
         visited[current] = true;
         path.push(current);
 
-        let x = current % self.width;
-        let y = current / self.width;
-        let cell = self.grid[current];
-
-        if !cell.walls.contains(Walls::NORTH) && y > 0 {
-            let n = current - self.width;
-            if !visited[n] && self.dfs(n, end, path, visited) {
-                return true;
-            }
-        }
-
-        if !cell.walls.contains(Walls::SOUTH) && y < self.height - 1 {
-            let s = current + self.width;
-            if !visited[s] && self.dfs(s, end, path, visited) {
-                return true;
-            }
-        }
-
-        if !cell.walls.contains(Walls::EAST) && x < self.width - 1 {
-            let e = current + 1;
-            if !visited[e] && self.dfs(e, end, path, visited) {
-                return true;
-            }
-        }
-
-        if !cell.walls.contains(Walls::WEST) && x > 0 {
-            let w = current - 1;
-            if !visited[w] && self.dfs(w, end, path, visited) {
+        for neighbour in self.get_neighbours(current) {
+            if !visited[neighbour] && self.dfs(neighbour, end, path, visited) {
                 return true;
             }
         }
         path.pop();
         false
+    }
+
+    fn generate_doors_and_keys(&mut self, rng: &mut ThreadRng) {
+        let path = self.find_path_to_exit();
+        if let Some(doors) = self.place_doors(&path[1..&path.len() - 1], rng) {
+            self.place_keys(&path, &doors, rng);
+        }
+    }
+
+    fn place_doors(&mut self, path: &[usize], rng: &mut ThreadRng) -> Option<Vec<usize>> {
+        let mut door_id = 0;
+        let max_doors = path.len() / 5;
+        if max_doors == 0 {
+            return None;
+        }
+
+        let number_of_doors = rng.random_range(1..=max_doors);
+        let mut doors = Vec::with_capacity(number_of_doors);
+
+        for i in 0..number_of_doors {
+            let region_start = i * path.len() / number_of_doors;
+            let region_end = ((i + 1) * path.len() / number_of_doors).min(path.len() - 1);
+
+            let door_pos = path[rng.random_range(region_start..region_end)];
+
+            if self.grid[door_pos].cell_type == CellType::Normal {
+                self.grid[door_pos].cell_type = CellType::Door(door_id);
+                door_id += 1;
+                doors.push(door_pos);
+            }
+        }
+
+        Some(doors)
+    }
+
+    fn place_keys(&mut self, path: &[usize], doors: &[usize], rng: &mut ThreadRng) {
+        let path_set: HashSet<usize> = path.iter().copied().collect();
+        for i in 0..doors.len() {
+            let accessible = self.get_accessible_zone(&doors[i..]);
+
+            let mut visited = vec![false; self.height * self.width];
+            let mut dead_ends = Vec::<usize>::new();
+            let mut queue = VecDeque::new();
+
+            queue.push_back(self.start);
+            visited[self.start] = true;
+
+            while let Some(current) = queue.pop_front() {
+                for neighbour in self.get_neighbours(current) {
+                    if accessible.contains(&neighbour) && !visited[neighbour] {
+                        queue.push_back(neighbour);
+                        visited[neighbour] = true;
+                        if self.is_dead_end(neighbour) && !path_set.contains(&neighbour) {
+                            dead_ends.push(neighbour);
+                        }
+                    }
+                }
+            }
+            let dead_ends = &dead_ends[dead_ends.len() / 2..];
+            if let CellType::Door(id) = self.grid[doors[i]].cell_type {
+                self.grid[*dead_ends.choose(rng).unwrap()].cell_type = CellType::Key(id);
+            }
+        }
+    }
+
+    fn is_dead_end(&self, idx: usize) -> bool {
+        let cell = self.grid[idx];
+        [Walls::NORTH, Walls::SOUTH, Walls::EAST, Walls::WEST]
+            .iter()
+            .filter(|&&w| cell.walls.contains(w))
+            .count()
+            == 3
+    }
+
+    fn get_accessible_zone(&self, locked_doors_positions: &[usize]) -> HashSet<usize> {
+        let locked_doors_positions: HashSet<usize> =
+            locked_doors_positions.iter().cloned().collect();
+        let mut accessible_zone = HashSet::new();
+        let mut visited = vec![false; self.width * self.height];
+
+        let mut queue = VecDeque::new();
+
+        queue.push_back(self.start);
+        visited[self.start] = true;
+
+        while let Some(current) = queue.pop_front() {
+            accessible_zone.insert(current);
+
+            for neighbour in self.get_neighbours(current) {
+                if !visited[neighbour] && !locked_doors_positions.contains(&neighbour) {
+                    queue.push_back(neighbour);
+                    visited[neighbour] = true;
+                }
+            }
+        }
+
+        accessible_zone
     }
 
     fn print_maze(&self) {
@@ -287,9 +358,9 @@ impl Maze {
                     " e "
                 } else {
                     match cell.cell_type {
-                        CellType::DOOR => " d ",
-                        CellType::KEY => " k ",
-                        CellType::NORMAL => "   ",
+                        CellType::Door(id) => &format!(" d{id}"),
+                        CellType::Key(id) => &format!(" k{id}"),
+                        CellType::Normal => "   ",
                     }
                 };
                 print!("{cell_char}");
@@ -312,7 +383,7 @@ impl Maze {
 }
 
 fn main() {
-    let mut maze = Maze::new(10, 15);
+    let mut maze = Maze::new(5, 7);
     maze.generate_prim();
     maze.print_maze();
     println!("{:?}", maze.find_path_to_exit());
