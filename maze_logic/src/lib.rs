@@ -1,14 +1,28 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+use rand::rngs::ThreadRng;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use crate::{
+    algorithms::find_furthest,
+    generator::{MazeGenerator, generation_algorithms::prim::PrimGenerator},
+    maze::Maze,
+    obstacles::place_doors_and_keys,
+};
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+mod algorithms;
+pub mod cell;
+pub mod generator;
+pub mod maze;
+mod obstacles;
+
+pub fn build(width: usize, height: usize, rng: &mut ThreadRng) -> Maze {
+    let mut maze = Maze::new(width, height);
+
+    PrimGenerator::generate(&mut maze, rng);
+
+    let end = find_furthest(&maze, maze.start());
+
+    maze.set_end(end);
+
+    place_doors_and_keys(&mut maze, rng);
+
+    maze
 }

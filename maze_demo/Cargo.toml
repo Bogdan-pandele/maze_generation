@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 bitflags = "2.11.1"
 rand = "0.10.1"
+maze_logic = { path = "../maze_logic" }
