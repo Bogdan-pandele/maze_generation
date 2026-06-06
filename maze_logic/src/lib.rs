@@ -1,22 +1,21 @@
 use rand::rngs::ThreadRng;
 
 use crate::{
-    algorithms::find_furthest,
-    generator::{MazeGenerator, generation_algorithms::prim::PrimGenerator},
-    maze::Maze,
+    algorithms::find_furthest, generator::MazeGenerator, grid::Shape, maze::Maze,
     obstacles::place_doors_and_keys,
 };
 
 mod algorithms;
 pub mod cell;
 pub mod generator;
+pub mod grid;
 pub mod maze;
 mod obstacles;
 
-pub fn build(width: usize, height: usize, rng: &mut ThreadRng) -> Maze {
-    let mut maze = Maze::new(width, height);
+pub fn build<S: Shape>(shape: S, rng: &mut ThreadRng, algorithm: impl MazeGenerator) -> Maze<S> {
+    let mut maze = Maze::new(shape);
 
-    PrimGenerator::generate(&mut maze, rng);
+    algorithm.generate(&mut maze, rng);
 
     let end = find_furthest(&maze, maze.start());
 

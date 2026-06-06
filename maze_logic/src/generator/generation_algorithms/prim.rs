@@ -1,32 +1,55 @@
 use rand::RngExt;
 
-use crate::generator::MazeGenerator;
+use crate::{generator::MazeGenerator, grid::Shape};
 
 pub struct PrimGenerator;
 
-impl MazeGenerator for PrimGenerator {
-    fn generate(maze: &mut crate::maze::Maze, rng: &mut rand::prelude::ThreadRng) {
-        let mut visited = vec![false; maze.width() * maze.height()];
-        let mut frontier = Vec::<(usize, usize)>::new();
+impl PrimGenerator {}
 
-        let start_idx = rng.random_range(0..visited.len());
+impl MazeGenerator for PrimGenerator {
+    fn generate<S: Shape>(
+        &self,
+        maze: &mut crate::maze::Maze<S>,
+        rng: &mut rand::prelude::ThreadRng,
+    ) {
+        let mut visited = vec![false; maze.size()];
+        let mut frontier = Vec::<usize>::new();
+
+        let start_idx = rng.random_range(0..maze.size());
         maze.set_start(start_idx);
-        let start_x = start_idx % maze.width();
-        let start_y = start_idx / maze.width();
 
         visited[start_idx] = true;
-        maze.add_unvisited_to_frontier(start_x, start_y, &visited, &mut frontier);
+        for neighbour in maze.get_neighbours(start_idx) {
+            if !visited[neighbour] {
+                frontier.push(neighbour);
+            }
+        }
 
         while !frontier.is_empty() {
             let idx = rng.random_range(0..frontier.len());
-            let (x, y) = frontier.swap_remove(idx);
+            let current = frontier.swap_remove(idx);
 
-            if visited[y * maze.width() + x] {
+            if visited[current] {
                 continue;
             }
 
-            visited[y * maze.width() + x] = true;
-            maze.connect_cell_to_neighbour(x, y, &visited, &mut frontier, rng);
+            visited[current] = true;
+            let visited_neighbours: Vec<usize> = maze
+                .get_neighbours(current)
+                .iter()
+                .filter(|&&n| visited[n])
+                .cloned()
+                .collect();
+
+            if !visited_neighbours.is_empty() {
+                let neighbour = visited_neighbours[rng.random_range(0..visited_neighbours.len())];
+                maze.remove_wall(current, neighbour);
+                for n in maze.get_neighbours(current) {
+                    if !visited[n] {
+                        frontier.push(n);
+                    }
+                }
+            }
         }
     }
 }

@@ -1,8 +1,8 @@
 use rand::rngs::ThreadRng;
 pub mod generation_algorithms;
 
-use crate::maze::Maze;
+use crate::{grid::Shape, maze::Maze};
 
 pub trait MazeGenerator {
-    fn generate(maze: &mut Maze, rng: &mut ThreadRng);
+    fn generate<S: Shape>(&self, maze: &mut Maze<S>, rng: &mut ThreadRng);
 }
