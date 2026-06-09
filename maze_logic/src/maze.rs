@@ -1,14 +1,11 @@
-use core::fmt;
-use std::{
-    collections::{HashSet, VecDeque},
-    fmt::Display,
-};
+use std::collections::{HashSet, VecDeque};
 
 use crate::{
-    cell::CellType,
-    grid::{Shape, shapes::rectangular::WallState},
+    cell::{CellType, WallState},
+    grid::Shape,
 };
 
+#[derive(Debug)]
 pub struct Maze<S: Shape> {
     shape: S,
     start: usize,
@@ -41,7 +38,7 @@ impl<S: Shape> Maze<S> {
     }
 
     pub fn size(&self) -> usize {
-        self.shape.size()
+        self.shape.total_cells()
     }
 
     pub fn get_accessible_neighbours(&self, idx: usize) -> Vec<usize> {
@@ -57,7 +54,7 @@ impl<S: Shape> Maze<S> {
     }
 
     pub fn get_wallstate_bewteen_neighbours(&self, idx1: usize, idx2: usize) -> WallState {
-        self.shape.get_wallstate_bewteen_neighbours(idx1, idx2)
+        self.shape.get_wallstate_between_neighbours(idx1, idx2)
     }
 
     pub fn set_cell_type(&mut self, cell_idx: usize, cell_type: CellType) {
@@ -66,7 +63,7 @@ impl<S: Shape> Maze<S> {
 
     pub fn get_accessible_zone(&self, current_key: u8) -> HashSet<usize> {
         let mut accessible_zone = HashSet::new();
-        let mut visited = vec![false; self.shape.size()];
+        let mut visited = vec![false; self.shape.total_cells()];
 
         let mut queue = VecDeque::new();
 
@@ -98,16 +95,11 @@ impl<S: Shape> Maze<S> {
     }
 
     pub fn remove_wall(&mut self, idx1: usize, idx2: usize) {
-        self.shape.remove_wall(idx1, idx2);
+        self.shape.set_wall_state(idx1, idx2, WallState::Open);
     }
 
     pub fn place_door(&mut self, idx1: usize, idx2: usize, door_id: u8) {
-        self.shape.place_door(idx1, idx2, door_id);
-    }
-}
-
-impl<S: Shape> Display for Maze<S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.shape.format_grid(f, self.start, self.end)
+        self.shape
+            .set_wall_state(idx1, idx2, WallState::Door(door_id));
     }
 }
