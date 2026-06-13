@@ -24,9 +24,29 @@ impl RectangularGrid {
             walls: vec![WallState::Solid; 4 * width * height],
         }
     }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
 }
 
 impl Shape for RectangularGrid {
+    fn wall_states_for_cell(&self, cell_idx: usize) -> Vec<WallState> {
+        vec![
+            self.walls[self.wall_idx(cell_idx, Self::NORTH)],
+            self.walls[self.wall_idx(cell_idx, Self::WEST)],
+            self.walls[self.wall_idx(cell_idx, Self::SOUTH)],
+            self.walls[self.wall_idx(cell_idx, Self::EAST)],
+        ]
+    }
+
+    fn cell_type(&self, idx: usize) -> CellType {
+        self.grid[idx]
+    }
     fn get_row_col(&self, idx: usize) -> (usize, usize) {
         (idx / self.width, idx % self.width)
     }

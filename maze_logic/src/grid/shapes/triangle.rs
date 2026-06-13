@@ -34,9 +34,29 @@ impl TriangularGrid {
 
         false
     }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
 }
 
 impl Shape for TriangularGrid {
+    fn wall_states_for_cell(&self, cell_idx: usize) -> Vec<WallState> {
+        vec![
+            self.walls[self.wall_idx(cell_idx, Self::LEFT)],
+            self.walls[self.wall_idx(cell_idx, Self::RIGHT)],
+            self.walls[self.wall_idx(cell_idx, Self::TOP_OR_BOTTOM)],
+        ]
+    }
+
+    fn cell_type(&self, idx: usize) -> CellType {
+        self.grid[idx]
+    }
+
     fn get_row_col(&self, idx: usize) -> (usize, usize) {
         (idx / self.width, idx % self.width)
     }

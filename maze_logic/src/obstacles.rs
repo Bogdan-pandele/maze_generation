@@ -1,6 +1,10 @@
 use std::collections::{HashSet, VecDeque};
 
-use rand::{RngExt, rngs::ThreadRng, seq::IndexedRandom};
+use rand::{
+    RngExt,
+    rngs::ThreadRng,
+    seq::{IndexedRandom, IteratorRandom},
+};
 
 use crate::{algorithms::find_path, cell::CellType, grid::Shape, maze::Maze};
 
@@ -39,10 +43,20 @@ fn place_keys<S: Shape>(maze: &mut Maze<S>, path: &[usize], max_door_id: u8, rng
         let accessible = maze.get_accessible_zone(key_id);
         let dead_ends = find_dead_ends_in_region(maze, &accessible, &path_set);
 
-        let candidate_dead_ends = &dead_ends[dead_ends.len() / 2..];
+        let candidate_dead_ends: Vec<usize> = dead_ends[dead_ends.len() / 2..]
+            .iter()
+            .copied()
+            .filter(|&idx| maze.cell_type(idx) == CellType::Normal)
+            .collect();
 
-        if let Some(&key_pos) = candidate_dead_ends.choose(rng) {
-            maze.set_cell_type(key_pos, CellType::Key(key_id));
+        let key_pos = if let Some(&pos) = candidate_dead_ends.choose(rng) {
+            Some(pos)
+        } else {
+            accessible.iter().choose(rng).copied()
+        };
+
+        if let Some(pos) = key_pos {
+            maze.set_cell_type(pos, CellType::Key(key_id));
         }
     }
 }

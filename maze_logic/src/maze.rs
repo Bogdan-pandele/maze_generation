@@ -21,12 +21,23 @@ impl<S: Shape> Maze<S> {
         }
     }
 
+    pub fn wall_states_for_cell(&self, idx: usize) -> Vec<WallState> {
+        self.shape.wall_states_for_cell(idx)
+    }
+    pub fn cell_type(&self, idx: usize) -> CellType {
+        self.shape.cell_type(idx)
+    }
+
     pub fn start(&self) -> usize {
         self.start
     }
 
     pub fn end(&self) -> usize {
         self.end
+    }
+
+    pub fn shape(&self) -> &S {
+        &self.shape
     }
 
     pub fn set_start(&mut self, start: usize) {

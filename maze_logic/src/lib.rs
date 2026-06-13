@@ -12,16 +12,18 @@ pub mod grid;
 pub mod maze;
 mod obstacles;
 
-pub fn build<S: Shape>(shape: S, rng: &mut ThreadRng, algorithm: impl MazeGenerator) -> Maze<S> {
+pub fn build<S: Shape>(shape: S, algorithm: impl MazeGenerator) -> Maze<S> {
+    let mut rng = ThreadRng::default();
+
     let mut maze = Maze::new(shape);
 
-    algorithm.generate(&mut maze, rng);
+    algorithm.generate(&mut maze, &mut rng);
 
     let end = find_furthest(&maze, maze.start());
 
     maze.set_end(end);
 
-    place_doors_and_keys(&mut maze, rng);
+    place_doors_and_keys(&mut maze, &mut rng);
 
     maze
 }
