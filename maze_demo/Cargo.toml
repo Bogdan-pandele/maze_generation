@@ -7,3 +7,4 @@ edition = "2024"
 bitflags = "2.11.1"
 rand = "0.10.1"
 maze_logic = { path = "../maze_logic" }
+appcui = "0.4.12"

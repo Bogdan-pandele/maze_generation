@@ -1,0 +1,130 @@
+use appcui::graphics::{CharAttribute, Color, LineType, Surface};
+use maze_logic::{
+    cell::{CellType, WallState},
+    grid::shapes::hexagon::HexagonalGrid,
+    maze::Maze,
+};
+
+use crate::maze::maze_drawer::{MazeDrawer, get_key_door_color};
+
+fn draw_hexagonal_cell(
+    maze: &Maze<HexagonalGrid>,
+    surface: &mut Surface,
+    row: i32,
+    col: i32,
+    cell_size: i32,
+    offset_x: i32,
+    offset_y: i32,
+) {
+    let h = cell_size * 173 / 100;
+    let x_left = if row % 2 == 0 {
+        offset_x + col * h * 2
+    } else {
+        offset_x + col * h * 2 + h
+    };
+    let x_right = x_left + h * 2;
+    let x_middle = x_left + h;
+    let y_top = offset_y + row * cell_size * 3 / 2;
+    let y_bottom = y_top + 2 * cell_size;
+
+    let edges = [
+        (x_middle, y_top, x_right, y_top + cell_size / 2),
+        (
+            x_right,
+            y_top + cell_size / 2,
+            x_right,
+            y_bottom - cell_size / 2,
+        ),
+        (x_right, y_bottom - cell_size / 2, x_middle, y_bottom),
+        (x_middle, y_bottom, x_left, y_bottom - cell_size / 2),
+        (
+            x_left,
+            y_bottom - cell_size / 2,
+            x_left,
+            y_top + cell_size / 2,
+        ),
+        (x_left, y_top + cell_size / 2, x_middle, y_top),
+    ];
+
+    let start = maze.start();
+    let end = maze.end();
+
+    let current_idx = row as usize * maze.shape().width() + col as usize;
+    let walls = maze.wall_states_for_cell(current_idx);
+
+    for (i, wallstate) in walls.iter().enumerate() {
+        let (x1, y1, x2, y2) = edges[i];
+        match wallstate {
+            WallState::Open => {}
+
+            WallState::Solid => surface.draw_line(
+                x1,
+                y1,
+                x2,
+                y2,
+                LineType::Border,
+                CharAttribute::with_fore_color(Color::White),
+            ),
+
+            WallState::Door(id) => {
+                let door_color = get_key_door_color(*id);
+                surface.draw_line(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    LineType::Border,
+                    CharAttribute::with_fore_color(door_color),
+                )
+            }
+        }
+    }
+
+    let x_center = x_middle;
+    let y_center = y_top + cell_size;
+    if current_idx == start {
+        surface.write_string(
+            x_center,
+            y_center,
+            "S",
+            CharAttribute::with_fore_color(Color::DarkGreen),
+            false,
+        );
+    } else if current_idx == end {
+        surface.write_string(
+            x_center,
+            y_center,
+            "E",
+            CharAttribute::with_fore_color(Color::DarkRed),
+            false,
+        );
+    } else if let CellType::Key(id) = maze.cell_type(current_idx) {
+        let key_color = get_key_door_color(id);
+        surface.write_string(
+            x_center,
+            y_center,
+            &format!("K{id}"),
+            CharAttribute::with_fore_color(key_color),
+            false,
+        );
+    }
+}
+
+impl MazeDrawer for Maze<HexagonalGrid> {
+    fn draw(
+        &self,
+        surface: &mut appcui::prelude::Surface,
+        cell_size: i32,
+        offset_x: i32,
+        offset_y: i32,
+    ) {
+        let width = self.shape().width() as i32;
+        let height = self.shape().height() as i32;
+
+        for row in 0..height {
+            for col in 0..width {
+                draw_hexagonal_cell(self, surface, row, col, cell_size, offset_x, offset_y);
+            }
+        }
+    }
+}
