@@ -1,6 +1,7 @@
 use crate::{
     cell::{CellType, WallState},
     grid::Shape,
+    maze::Direction,
 };
 
 #[derive(Debug)]
@@ -41,6 +42,10 @@ impl TriangularGrid {
 
     pub fn height(&self) -> usize {
         self.height
+    }
+
+    pub fn walls(&mut self) -> &mut Vec<WallState> {
+        &mut self.walls
     }
 }
 
@@ -97,6 +102,57 @@ impl Shape for TriangularGrid {
             }
         }
         neighbours
+    }
+
+    fn neighbour_in_direction(
+        &self,
+        current: usize,
+        direction: crate::maze::Direction,
+    ) -> Option<usize> {
+        let (row, col) = self.get_row_col(current);
+        match direction {
+            Direction::Top => {
+                if !self.is_upside_down(current) {
+                    None
+                } else {
+                    if row > 0 {
+                        Some(current - self.width)
+                    } else {
+                        None
+                    }
+                }
+            }
+
+            Direction::Bottom => {
+                if self.is_upside_down(current) {
+                    None
+                } else {
+                    if row >= self.height - 1 {
+                        None
+                    } else {
+                        Some(current + self.width)
+                    }
+                }
+            }
+
+            Direction::Left => {
+                if col > 0 {
+                    Some(current - 1)
+                } else {
+                    None
+                }
+            }
+
+            Direction::Right => {
+                if col < self.width - 1 {
+                    Some(current + 1)
+                } else {
+                    None
+                }
+            }
+
+            _ => None,
+        }
     }
 
     fn is_dead_end(&self, idx: usize) -> bool {

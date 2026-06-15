@@ -5,6 +5,17 @@ use crate::{
     grid::Shape,
 };
 
+pub enum Direction {
+    Top,
+    TopRight,
+    Right,
+    BottomRight,
+    Bottom,
+    BottomLeft,
+    Left,
+    TopLeft,
+}
+
 #[derive(Debug)]
 pub struct Maze<S: Shape> {
     shape: S,
@@ -19,6 +30,31 @@ impl<S: Shape> Maze<S> {
             start: 0,
             end: 0,
         }
+    }
+
+    pub fn neighbour_in_direction(
+        &self,
+        current: usize,
+        direction: Direction,
+        keys: &HashSet<u8>,
+    ) -> Option<usize> {
+        if let Some(neighbour) = self.shape.neighbour_in_direction(current, direction) {
+            let wall = self.get_wallstate_bewteen_neighbours(current, neighbour);
+
+            return match wall {
+                WallState::Solid => None,
+                WallState::Open => Some(neighbour),
+                WallState::Door(id) => {
+                    if keys.contains(&id) {
+                        Some(neighbour)
+                    } else {
+                        None
+                    }
+                }
+            };
+        };
+
+        None
     }
 
     pub fn wall_states_for_cell(&self, idx: usize) -> Vec<WallState> {
@@ -64,12 +100,22 @@ impl<S: Shape> Maze<S> {
         self.shape.is_dead_end(idx)
     }
 
+    pub fn set_wall_state(&mut self, idx1: usize, idx2: usize, state: WallState) {
+        self.shape.set_wall_state(idx1, idx2, state);
+    }
+
     pub fn get_wallstate_bewteen_neighbours(&self, idx1: usize, idx2: usize) -> WallState {
         self.shape.get_wallstate_between_neighbours(idx1, idx2)
     }
 
     pub fn set_cell_type(&mut self, cell_idx: usize, cell_type: CellType) {
         self.shape.set_cell_type(cell_idx, cell_type);
+    }
+
+    pub fn open_door(&mut self, idx1: usize, idx2: usize) {
+        if let WallState::Door(_) = self.get_wallstate_bewteen_neighbours(idx1, idx2) {
+            self.set_wall_state(idx1, idx2, WallState::Open);
+        }
     }
 
     pub fn get_accessible_zone(&self, current_key: u8) -> HashSet<usize> {

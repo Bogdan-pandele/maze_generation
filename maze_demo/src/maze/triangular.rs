@@ -1,4 +1,4 @@
-use appcui::graphics::{CharAttribute, Color, LineType, Surface};
+use appcui::graphics::{CharAttribute, Character, Color, LineType, Surface};
 use maze_logic::{
     cell::{CellType, WallState},
     grid::shapes::triangle::TriangularGrid,
@@ -15,6 +15,7 @@ fn draw_triangular_cell(
     cell_size: i32,
     offset_x: i32,
     offset_y: i32,
+    player_pos: usize,
 ) {
     let x_left = offset_x + col * cell_size;
     let x_right = x_left + 2 * cell_size;
@@ -25,7 +26,6 @@ fn draw_triangular_cell(
 
     let is_upside_down = (row + col) % 2 != 0;
 
-    let start = maze.start();
     let end = maze.end();
 
     let current_idx = row as usize * maze.shape().width() + col as usize;
@@ -80,21 +80,11 @@ fn draw_triangular_cell(
         y_top + 2 * cell_size / 3
     };
 
-    if current_idx == start {
-        surface.write_string(
+    if current_idx == end {
+        surface.write_char(
             x_center,
             y_center,
-            "S",
-            CharAttribute::with_fore_color(Color::DarkGreen),
-            false,
-        );
-    } else if current_idx == end {
-        surface.write_string(
-            x_center,
-            y_center,
-            "E",
-            CharAttribute::with_fore_color(Color::DarkRed),
-            false,
+            Character::with_attributes('🥅', CharAttribute::with_fore_color(Color::Red)),
         );
     } else if let CellType::Key(id) = maze.cell_type(current_idx) {
         let key_color = get_key_door_color(id);
@@ -104,6 +94,15 @@ fn draw_triangular_cell(
             &format!("K{id}"),
             CharAttribute::with_fore_color(key_color),
             false,
+        );
+    } else if current_idx == player_pos {
+        surface.write_char(
+            x_center,
+            y_center,
+            Character::with_attributes(
+                '🟡',
+                CharAttribute::with_color(Color::Yellow, Color::Black),
+            ),
         );
     }
 }
@@ -115,13 +114,16 @@ impl MazeDrawer for Maze<TriangularGrid> {
         cell_size: i32,
         offset_x: i32,
         offset_y: i32,
+        player_pos: usize,
     ) {
         let width = self.shape().width() as i32;
         let height = self.shape().height() as i32;
 
         for row in 0..height {
             for col in 0..width {
-                draw_triangular_cell(self, surface, row, col, cell_size, offset_x, offset_y);
+                draw_triangular_cell(
+                    self, surface, row, col, cell_size, offset_x, offset_y, player_pos,
+                );
             }
         }
     }

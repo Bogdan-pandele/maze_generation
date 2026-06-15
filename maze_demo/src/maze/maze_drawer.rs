@@ -16,5 +16,12 @@ pub fn get_key_door_color(id: u8) -> Color {
 }
 
 pub trait MazeDrawer {
-    fn draw(&self, surface: &mut Surface, cell_size: i32, off_x: i32, off_y: i32);
+    fn draw(
+        &self,
+        surface: &mut Surface,
+        cell_size: i32,
+        off_x: i32,
+        off_y: i32,
+        player_pos: usize,
+    );
 }

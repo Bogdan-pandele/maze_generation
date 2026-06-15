@@ -1,6 +1,7 @@
 use crate::{
     cell::{CellType, WallState},
     grid::Shape,
+    maze::Direction,
 };
 
 #[derive(Debug)]
@@ -34,6 +35,10 @@ impl HexagonalGrid {
 
     pub fn height(&self) -> usize {
         self.height
+    }
+
+    pub fn walls(&mut self) -> &mut Vec<WallState> {
+        &mut self.walls
     }
 }
 
@@ -115,6 +120,98 @@ impl Shape for HexagonalGrid {
         }
 
         neighbours
+    }
+
+    fn neighbour_in_direction(
+        &self,
+        current: usize,
+        direction: crate::maze::Direction,
+    ) -> Option<usize> {
+        let (row, col) = self.get_row_col(current);
+
+        match direction {
+            Direction::Left => {
+                if col > 0 {
+                    Some(current - 1)
+                } else {
+                    None
+                }
+            }
+
+            Direction::Right => {
+                if col < self.width - 1 {
+                    Some(current + 1)
+                } else {
+                    None
+                }
+            }
+
+            Direction::TopLeft => {
+                if row > 0 {
+                    if row % 2 == 0 {
+                        if col > 0 {
+                            Some(current - self.width - 1)
+                        } else {
+                            None
+                        }
+                    } else {
+                        Some(current - self.width)
+                    }
+                } else {
+                    None
+                }
+            }
+
+            Direction::TopRight => {
+                if row > 0 {
+                    if row % 2 == 0 {
+                        Some(current - self.width)
+                    } else {
+                        if col < self.width - 1 {
+                            Some(current - self.width + 1)
+                        } else {
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
+            }
+
+            Direction::BottomLeft => {
+                if row < self.height - 1 {
+                    if row % 2 == 0 {
+                        if col > 0 {
+                            Some(current + self.width - 1)
+                        } else {
+                            None
+                        }
+                    } else {
+                        Some(current + self.width)
+                    }
+                } else {
+                    None
+                }
+            }
+
+            Direction::BottomRight => {
+                if row < self.height - 1 {
+                    if row % 2 == 0 {
+                        Some(current + self.width)
+                    } else {
+                        if col < self.width - 1 {
+                            Some(current + self.width + 1)
+                        } else {
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
+            }
+
+            _ => None,
+        }
     }
 
     fn is_dead_end(&self, idx: usize) -> bool {

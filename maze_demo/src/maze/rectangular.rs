@@ -1,4 +1,4 @@
-use appcui::graphics::{CharAttribute, Color, LineType, Surface};
+use appcui::graphics::{CharAttribute, Character, Color, LineType, Surface};
 use maze_logic::{
     cell::{CellType, WallState},
     grid::shapes::rectangle::RectangularGrid,
@@ -15,13 +15,13 @@ fn draw_rectangular_cell(
     cell_size: i32,
     offset_x: i32,
     offset_y: i32,
+    player_pos: usize,
 ) {
     let x_left = offset_x + col * cell_size * 2;
     let y_top = offset_y + row * cell_size;
     let x_right = x_left + cell_size * 2;
     let y_bottom = y_top + cell_size;
 
-    let start = maze.start();
     let end = maze.end();
 
     let current_idx = row as usize * maze.shape().width() + col as usize;
@@ -62,21 +62,11 @@ fn draw_rectangular_cell(
 
     let x_center = x_left + cell_size;
     let y_center = y_top + cell_size / 2;
-    if current_idx == start {
-        surface.write_string(
+    if current_idx == end {
+        surface.write_char(
             x_center,
             y_center,
-            "S",
-            CharAttribute::with_fore_color(Color::DarkGreen),
-            false,
-        );
-    } else if current_idx == end {
-        surface.write_string(
-            x_center,
-            y_center,
-            "E",
-            CharAttribute::with_fore_color(Color::DarkRed),
-            false,
+            Character::with_attributes('🥅', CharAttribute::with_fore_color(Color::Red)),
         );
     } else if let CellType::Key(id) = maze.cell_type(current_idx) {
         let key_color = get_key_door_color(id);
@@ -87,17 +77,33 @@ fn draw_rectangular_cell(
             CharAttribute::with_fore_color(key_color),
             false,
         );
+    } else if current_idx == player_pos {
+        surface.write_char(
+            x_center,
+            y_center,
+            Character::with_attributes(
+                '🟡',
+                CharAttribute::with_color(Color::Yellow, Color::Black),
+            ),
+        );
     }
 }
 
 impl MazeDrawer for Maze<RectangularGrid> {
-    fn draw(&self, surface: &mut Surface, cell_size: i32, off_x: i32, off_y: i32) {
+    fn draw(
+        &self,
+        surface: &mut Surface,
+        cell_size: i32,
+        off_x: i32,
+        off_y: i32,
+        player_pos: usize,
+    ) {
         let width = self.shape().width() as i32;
         let height = self.shape().height() as i32;
 
         for row in 0..height {
             for col in 0..width {
-                draw_rectangular_cell(self, surface, row, col, cell_size, off_x, off_y);
+                draw_rectangular_cell(self, surface, row, col, cell_size, off_x, off_y, player_pos);
             }
         }
     }

@@ -1,9 +1,13 @@
-use crate::cell::{CellType, WallState};
+use crate::{
+    cell::{CellType, WallState},
+    maze::Direction,
+};
 
 pub mod shapes;
 pub trait Shape {
     fn cell_type(&self, cell_idx: usize) -> CellType;
     fn get_accessible_neighbours(&self, cell_idx: usize) -> Vec<usize>;
+    fn neighbour_in_direction(&self, current: usize, direction: Direction) -> Option<usize>;
     fn is_dead_end(&self, idx: usize) -> bool;
     fn get_wallstate_between_neighbours(&self, idx1: usize, idx2: usize) -> WallState;
     fn set_cell_type(&mut self, cell_idx: usize, cell_type: CellType);
