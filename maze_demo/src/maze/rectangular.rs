@@ -24,7 +24,7 @@ fn draw_rectangular_cell(
 
     let end = maze.end();
 
-    let current_idx = row as usize * maze.shape().width() + col as usize;
+    let current_idx = row as usize * maze.width() + col as usize;
     let walls = maze.wall_states_for_cell(current_idx);
 
     let edges = [
@@ -70,12 +70,10 @@ fn draw_rectangular_cell(
         );
     } else if let CellType::Key(id) = maze.cell_type(current_idx) {
         let key_color = get_key_door_color(id);
-        surface.write_string(
+        surface.write_char(
             x_center,
             y_center,
-            &format!("K{id}"),
-            CharAttribute::with_fore_color(key_color),
-            false,
+            Character::with_attributes('⚷', CharAttribute::with_fore_color(key_color)),
         );
     } else if current_idx == player_pos {
         surface.write_char(
@@ -98,8 +96,8 @@ impl MazeDrawer for Maze<RectangularGrid> {
         off_y: i32,
         player_pos: usize,
     ) {
-        let width = self.shape().width() as i32;
-        let height = self.shape().height() as i32;
+        let width = self.width() as i32;
+        let height = self.height() as i32;
 
         for row in 0..height {
             for col in 0..width {

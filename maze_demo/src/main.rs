@@ -6,7 +6,10 @@ use appcui::{
     ui::{LayoutBuilder, Window, common::traits::OnPaint, desktop::events::DesktopEvents, window},
 };
 use maze_logic::build;
+use maze_logic::generator::MazeGenerator;
+use maze_logic::generator::generation_algorithms::cut::CuttingGenerator;
 use maze_logic::generator::generation_algorithms::prim::PrimGenerator;
+use maze_logic::generator::generation_algorithms::wilson::WilsonGenerator;
 use maze_logic::grid::shapes::hexagon::HexagonalGrid;
 use maze_logic::grid::shapes::rectangle::RectangularGrid;
 use maze_logic::grid::shapes::triangle::TriangularGrid;
@@ -45,11 +48,27 @@ enum Shape {
     Hexagonal,
 }
 
+#[derive(Clone, Copy)]
 enum Algorithm {
     Prim,
+    Wilson,
+    Cutting
 }
 
-#[Desktop(events = [MenuEvents, DesktopEvents, AppBarEvents],  commands = [RectangularShape, TriangularShape, HexagonalShape, PrimAlgorithm, SmallMaze, MediumMaze,LargeMaze])]
+impl MazeGenerator for Algorithm {
+    fn generate<S: maze_logic::grid::Shape>(&self, maze: &mut maze_logic::maze::Maze<S>, rng: &mut rand::prelude::ThreadRng) {
+        match self {
+            Algorithm::Prim => PrimGenerator.generate(maze, rng),
+            Algorithm::Wilson => WilsonGenerator.generate(maze, rng),
+            Algorithm::Cutting => CuttingGenerator.generate(maze, rng),
+        }
+    }
+}
+
+#[Desktop(events = [MenuEvents, DesktopEvents, AppBarEvents],  
+        commands = [RectangularShape, TriangularShape, HexagonalShape, PrimAlgorithm, SmallMaze, MediumMaze,LargeMaze, WilsonAlgorithm, CuttingAlgorithm]
+    )
+]
 struct MyDesktop {
     shape: Shape,
     algorithm: Algorithm,
@@ -82,15 +101,16 @@ impl MyDesktop {
     fn generate_maze(&mut self) {
         let (w, h) = self.size.dimensions();
 
+
         let active_maze = match self.shape {
             Shape::Rectangular => {
-                ActiveMaze::Rectangular(build(RectangularGrid::new(w, h), PrimGenerator))
+                ActiveMaze::Rectangular(build(RectangularGrid::new(w, h), self.algorithm))
             }
             Shape::Triangular => {
-                ActiveMaze::Triangular(build(TriangularGrid::new(w, h), PrimGenerator))
+                ActiveMaze::Triangular(build(TriangularGrid::new(w, h), self.algorithm))
             }
             Shape::Hexagonal => {
-                ActiveMaze::Hexagonal(build(HexagonalGrid::new(w, h), PrimGenerator))
+                ActiveMaze::Hexagonal(build(HexagonalGrid::new(w, h), self.algorithm))
             }
         };
 
@@ -125,7 +145,8 @@ impl DesktopEvents for MyDesktop {
 
         self.menu_algorithm = self.appbar().add(MenuButton::new(
             "Algorithm",
-            menu!("class:MyDesktop, items=[{Prim, selected:true, cmd: PrimAlgorithm}]"),
+            menu!("class:MyDesktop, items=[{Prim, selected:true, cmd: PrimAlgorithm}, {Wilson, selected:false, cmd: WilsonAlgorithm}, 
+            {Cutting, selected: false, cmd: CuttingAlgorithm}]"),
             0,
             appbar::Side::Left,
         ));
@@ -162,12 +183,15 @@ impl MenuEvents for MyDesktop {
     ) {
         match command {
             mydesktop::Commands::PrimAlgorithm => self.algorithm = Algorithm::Prim,
+            mydesktop::Commands::WilsonAlgorithm => self.algorithm = Algorithm::Wilson,
+            mydesktop::Commands::CuttingAlgorithm => self.algorithm = Algorithm::Cutting,
             mydesktop::Commands::RectangularShape => self.shape = Shape::Rectangular,
             mydesktop::Commands::TriangularShape => self.shape = Shape::Triangular,
             mydesktop::Commands::HexagonalShape => self.shape = Shape::Hexagonal,
             mydesktop::Commands::SmallMaze => self.size = MazeSize::Small,
             mydesktop::Commands::MediumMaze => self.size = MazeSize::Medium,
             mydesktop::Commands::LargeMaze => self.size = MazeSize::Large,
+            
         }
     }
 }

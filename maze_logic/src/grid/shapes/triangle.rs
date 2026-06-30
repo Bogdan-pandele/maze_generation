@@ -36,20 +36,20 @@ impl TriangularGrid {
         false
     }
 
-    pub fn width(&self) -> usize {
-        self.width
-    }
-
-    pub fn height(&self) -> usize {
-        self.height
-    }
-
     pub fn walls(&mut self) -> &mut Vec<WallState> {
         &mut self.walls
     }
 }
 
 impl Shape for TriangularGrid {
+    fn width(&self) -> usize {
+        self.width
+    }
+
+    fn height(&self) -> usize {
+        self.height
+    }
+
     fn wall_states_for_cell(&self, cell_idx: usize) -> Vec<WallState> {
         vec![
             self.walls[self.wall_idx(cell_idx, Self::LEFT)],

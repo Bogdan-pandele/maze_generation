@@ -5,6 +5,8 @@ use crate::{
 
 pub mod shapes;
 pub trait Shape {
+    fn width(&self) -> usize;
+    fn height(&self) -> usize;
     fn cell_type(&self, cell_idx: usize) -> CellType;
     fn get_accessible_neighbours(&self, cell_idx: usize) -> Vec<usize>;
     fn neighbour_in_direction(&self, current: usize, direction: Direction) -> Option<usize>;

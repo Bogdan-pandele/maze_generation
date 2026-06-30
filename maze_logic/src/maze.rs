@@ -57,6 +57,14 @@ impl<S: Shape> Maze<S> {
         None
     }
 
+    pub fn width(&self) -> usize {
+        self.shape().width()
+    }
+
+    pub fn height(&self) -> usize {
+        self.shape().height()
+    }
+
     pub fn wall_states_for_cell(&self, idx: usize) -> Vec<WallState> {
         self.shape.wall_states_for_cell(idx)
     }

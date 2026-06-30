@@ -1,17 +1,11 @@
-use rand::RngExt;
+use rand::{RngExt, rngs::ThreadRng};
 
 use crate::{generator::MazeGenerator, grid::Shape};
 
 pub struct PrimGenerator;
 
-impl PrimGenerator {}
-
 impl MazeGenerator for PrimGenerator {
-    fn generate<S: Shape>(
-        &self,
-        maze: &mut crate::maze::Maze<S>,
-        rng: &mut rand::prelude::ThreadRng,
-    ) {
+    fn generate<S: Shape>(&self, maze: &mut crate::maze::Maze<S>, rng: &mut ThreadRng) {
         let mut visited = vec![false; maze.size()];
         let mut frontier = Vec::<usize>::new();
 
