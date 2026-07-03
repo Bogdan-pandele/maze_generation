@@ -84,7 +84,7 @@ fn draw_triangular_cell(
         surface.write_char(
             x_center,
             y_center,
-            Character::with_attributes('🥅', CharAttribute::with_fore_color(Color::Red)),
+            Character::with_attributes('\u{2605}', CharAttribute::with_fore_color(Color::Red)),
         );
     } else if let CellType::Key(id) = maze.cell_type(current_idx) {
         let key_color = get_key_door_color(id);
@@ -98,7 +98,7 @@ fn draw_triangular_cell(
             x_center,
             y_center,
             Character::with_attributes(
-                '🟡',
+                '\u{25CF}',
                 CharAttribute::with_color(Color::Yellow, Color::Black),
             ),
         );

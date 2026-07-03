@@ -14,6 +14,7 @@ use maze_logic::grid::shapes::hexagon::HexagonalGrid;
 use maze_logic::grid::shapes::rectangle::RectangularGrid;
 use maze_logic::grid::shapes::triangle::TriangularGrid;
 
+use crate::Algorithm::{Cutting, Prim, Wilson};
 use crate::maze::maze_game::{ActiveMaze, MazeGame};
 
 mod maze;
@@ -26,10 +27,21 @@ enum MazeSize {
 
 impl MazeSize {
     fn dimensions(&self) -> (usize, usize) {
-        match self {
-            MazeSize::Small => (10, 5),
-            MazeSize::Medium => (13, 7),
-            MazeSize::Large => (18, 8),
+        #[cfg(target_os = "linux")]
+        {
+            match self {
+                MazeSize::Small => (10, 5),
+                MazeSize::Medium => (13, 7),
+                MazeSize::Large => (18, 8),
+            }
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            match self {
+                MazeSize::Small => (13, 5),
+                MazeSize::Medium => (15, 6),
+                MazeSize::Large => (17, 7),
+            }
         }
     }
 
@@ -52,11 +64,15 @@ enum Shape {
 enum Algorithm {
     Prim,
     Wilson,
-    Cutting
+    Cutting,
 }
 
 impl MazeGenerator for Algorithm {
-    fn generate<S: maze_logic::grid::Shape>(&self, maze: &mut maze_logic::maze::Maze<S>, rng: &mut rand::prelude::ThreadRng) {
+    fn generate<S: maze_logic::grid::Shape>(
+        &self,
+        maze: &mut maze_logic::maze::Maze<S>,
+        rng: &mut rand::prelude::ThreadRng,
+    ) {
         match self {
             Algorithm::Prim => PrimGenerator.generate(maze, rng),
             Algorithm::Wilson => WilsonGenerator.generate(maze, rng),
@@ -100,17 +116,20 @@ impl MyDesktop {
 
     fn generate_maze(&mut self) {
         let (w, h) = self.size.dimensions();
-
+        let use_obstacles = match self.algorithm {
+            Prim | Wilson => true,
+            Cutting => false
+        };
 
         let active_maze = match self.shape {
             Shape::Rectangular => {
-                ActiveMaze::Rectangular(build(RectangularGrid::new(w, h), self.algorithm))
+                ActiveMaze::Rectangular(build(RectangularGrid::new(w, h), self.algorithm, use_obstacles))
             }
             Shape::Triangular => {
-                ActiveMaze::Triangular(build(TriangularGrid::new(w, h), self.algorithm))
+                ActiveMaze::Triangular(build(TriangularGrid::new(w, h), self.algorithm, use_obstacles))
             }
             Shape::Hexagonal => {
-                ActiveMaze::Hexagonal(build(HexagonalGrid::new(w, h), self.algorithm))
+                ActiveMaze::Hexagonal(build(HexagonalGrid::new(w, h), self.algorithm, use_obstacles))
             }
         };
 
@@ -125,7 +144,16 @@ impl MyDesktop {
             window::Flags::Sizeable,
         );
 
-        win.add(MazeGame::new(active_maze, self.size.cell_size()));
+        let mut final_cell_size = self.size.cell_size();
+        if let Shape::Hexagonal = self.shape {
+            final_cell_size = match self.size {
+                MazeSize::Small => 5,
+                MazeSize::Medium => 4,
+                MazeSize::Large => 4,
+            }
+        }
+
+        win.add(MazeGame::new(active_maze, final_cell_size));
         self.game_window = self.add_window(win);
     }
 }
@@ -191,7 +219,6 @@ impl MenuEvents for MyDesktop {
             mydesktop::Commands::SmallMaze => self.size = MazeSize::Small,
             mydesktop::Commands::MediumMaze => self.size = MazeSize::Medium,
             mydesktop::Commands::LargeMaze => self.size = MazeSize::Large,
-            
         }
     }
 }

@@ -17,7 +17,13 @@ fn draw_hexagonal_cell(
     offset_y: i32,
     player_pos: usize,
 ) {
-    let h = cell_size * 173 / 100;
+    #[cfg(target_os = "windows")]
+    let width_ratio = 140;
+
+    #[cfg(not(target_os = "windows"))]
+    let width_ratio = 173;
+
+    let h = cell_size * width_ratio / 100;
     let x_left = if row % 2 == 0 {
         offset_x + col * h * 2
     } else {
@@ -25,28 +31,23 @@ fn draw_hexagonal_cell(
     };
     let x_right = x_left + h * 2;
     let x_middle = x_left + h;
-    let y_top = offset_y + row * cell_size * 3 / 2;
-    let y_bottom = y_top + 2 * cell_size;
+
+    let y0 = offset_y + (row * 3 * cell_size) / 2;
+    let y1 = offset_y + (row * 3 * cell_size + cell_size) / 2;
+    let y2 = offset_y + (row * 3 * cell_size + 3 * cell_size) / 2;
+    let y3 = offset_y + (row * 3 * cell_size + 4 * cell_size) / 2;
+
+    // let y_top = offset_y + row * cell_size * 3 / 2;
+    // let y_bottom = y_top + 2 * cell_size;
 
     let edges = [
-        (x_middle, y_top, x_right, y_top + cell_size / 2),
-        (
-            x_right,
-            y_top + cell_size / 2,
-            x_right,
-            y_bottom - cell_size / 2,
-        ),
-        (x_right, y_bottom - cell_size / 2, x_middle, y_bottom),
-        (x_middle, y_bottom, x_left, y_bottom - cell_size / 2),
-        (
-            x_left,
-            y_bottom - cell_size / 2,
-            x_left,
-            y_top + cell_size / 2,
-        ),
-        (x_left, y_top + cell_size / 2, x_middle, y_top),
+        (x_middle, y0, x_right, y1),
+        (x_right, y1, x_right, y2),
+        (x_right, y2, x_middle, y3),
+        (x_middle, y3, x_left, y2),
+        (x_left, y2, x_left, y1),
+        (x_left, y1, x_middle, y0),
     ];
-
     let end = maze.end();
 
     let current_idx = row as usize * maze.width() + col as usize;
@@ -81,12 +82,12 @@ fn draw_hexagonal_cell(
     }
 
     let x_center = x_middle;
-    let y_center = y_top + cell_size;
+    let y_center = offset_y + (row * 3 * cell_size + 2 * cell_size) / 2;
     if current_idx == end {
         surface.write_char(
             x_center,
             y_center,
-            Character::with_attributes('🥅', CharAttribute::with_fore_color(Color::Red)),
+            Character::with_attributes('\u{2605}', CharAttribute::with_fore_color(Color::Red)),
         );
     } else if let CellType::Key(id) = maze.cell_type(current_idx) {
         let key_color = get_key_door_color(id);
@@ -100,7 +101,7 @@ fn draw_hexagonal_cell(
             x_center,
             y_center,
             Character::with_attributes(
-                '🟡',
+                '\u{25CF}',
                 CharAttribute::with_color(Color::Yellow, Color::Black),
             ),
         );

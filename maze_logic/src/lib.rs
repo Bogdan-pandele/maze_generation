@@ -12,7 +12,7 @@ pub mod grid;
 pub mod maze;
 mod obstacles;
 
-pub fn build<S: Shape>(shape: S, algorithm: impl MazeGenerator) -> Maze<S> {
+pub fn build<S: Shape>(shape: S, algorithm: impl MazeGenerator, use_obstacles: bool) -> Maze<S> {
     let mut rng = ThreadRng::default();
 
     let mut maze = Maze::new(shape);
@@ -22,8 +22,9 @@ pub fn build<S: Shape>(shape: S, algorithm: impl MazeGenerator) -> Maze<S> {
     let end = find_furthest(&maze, maze.start());
 
     maze.set_end(end);
-
-    place_doors_and_keys(&mut maze, &mut rng);
+    if use_obstacles {
+        place_doors_and_keys(&mut maze, &mut rng);
+    }
 
     maze
 }
